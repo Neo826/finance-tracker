@@ -9,7 +9,9 @@ const withPWAConfig = withPWA({
 
 export default withPWAConfig({
   experimental: { serverActions: { allowedOrigins: ['*'] } },
-  // Acknowledge that we're using Turbopack (Next.js 16 default)
-  // next-pwa adds a webpack config, but we silence the error here
   turbopack: {},
+  webpack: (config) => {
+    config.resolve.alias['pg-native'] = false
+    return config
+  },
 })
