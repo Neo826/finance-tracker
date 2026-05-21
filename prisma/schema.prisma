@@ -1,0 +1,56 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String
+  name          String
+  createdAt     DateTime  @default(now())
+  categories    Category[]
+  transactions  Transaction[]
+  recurring     RecurringExpense[]
+}
+
+model Category {
+  id           String        @id @default(cuid())
+  name         String
+  color        String        @default("#6366f1")
+  icon         String        @default("💰")
+  type         String        // "income" | "expense"
+  userId       String
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+  recurring    RecurringExpense[]
+}
+
+model Transaction {
+  id          String   @id @default(cuid())
+  amount      Float
+  type        String   // "income" | "expense"
+  note        String?
+  date        DateTime
+  categoryId  String
+  category    Category @relation(fields: [categoryId], references: [id])
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+}
+
+model RecurringExpense {
+  id          String   @id @default(cuid())
+  name        String
+  amount      Float
+  dayOfMonth  Int
+  categoryId  String
+  category    Category @relation(fields: [categoryId], references: [id])
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+}
