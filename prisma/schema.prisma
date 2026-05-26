@@ -23,6 +23,7 @@ model Category {
   color        String        @default("#6366f1")
   icon         String        @default("💰")
   type         String        // "income" | "expense"
+  monthlyBudget Float?
   userId       String
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   transactions Transaction[]
