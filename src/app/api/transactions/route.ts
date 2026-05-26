@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
         amount: parseFloat(amount),
         type,
         note: note || null,
-        date: new Date(date),
+        date: new Date(`${date}T12:00:00`),
         categoryId,
         userId: session.user.id,
       },
