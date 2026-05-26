@@ -9,17 +9,22 @@ export async function GET(req: NextRequest) {
   }
 
   const { searchParams } = new URL(req.url)
-  const month = parseInt(searchParams.get('month') ?? String(new Date().getMonth() + 1))
-  const year = parseInt(searchParams.get('year') ?? String(new Date().getFullYear()))
+  const categoryId = searchParams.get('categoryId')
 
-  const start = new Date(year, month - 1, 1)
-  const end = new Date(year, month, 0, 23, 59, 59, 999)
+  let where: Record<string, unknown> = { userId: session.user.id }
+
+  if (categoryId) {
+    where = { ...where, categoryId }
+  } else {
+    const month = parseInt(searchParams.get('month') ?? String(new Date().getMonth() + 1))
+    const year = parseInt(searchParams.get('year') ?? String(new Date().getFullYear()))
+    const start = new Date(year, month - 1, 1)
+    const end = new Date(year, month, 0, 23, 59, 59, 999)
+    where = { ...where, date: { gte: start, lte: end } }
+  }
 
   const transactions = await prisma.transaction.findMany({
-    where: {
-      userId: session.user.id,
-      date: { gte: start, lte: end },
-    },
+    where,
     include: { category: true },
     orderBy: { date: 'desc' },
   })

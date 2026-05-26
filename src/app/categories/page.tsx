@@ -3,7 +3,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Plus, Pencil, Trash2 } from 'lucide-react'
 import * as Tabs from '@radix-ui/react-tabs'
+import { format } from 'date-fns'
 import BottomSheet from '@/components/BottomSheet'
+import { formatCurrency } from '@/lib/utils'
 
 interface Category {
   id: string
@@ -11,6 +13,15 @@ interface Category {
   color: string
   icon: string
   type: string
+}
+
+interface Transaction {
+  id: string
+  amount: number
+  type: string
+  note: string | null
+  date: string
+  category: Category
 }
 
 const COLOR_PALETTE = [
@@ -25,6 +36,9 @@ export default function CategoriesPage() {
   const [activeTab, setActiveTab] = useState<'expense' | 'income'>('expense')
   const [showSheet, setShowSheet] = useState(false)
   const [editingCategory, setEditingCategory] = useState<Category | null>(null)
+  const [viewingCategory, setViewingCategory] = useState<Category | null>(null)
+  const [categoryTransactions, setCategoryTransactions] = useState<Transaction[]>([])
+  const [txLoading, setTxLoading] = useState(false)
 
   // Form state
   const [name, setName] = useState('')
@@ -47,6 +61,14 @@ export default function CategoriesPage() {
   useEffect(() => {
     fetchCategories()
   }, [fetchCategories])
+
+  async function openCategory(cat: Category) {
+    setViewingCategory(cat)
+    setTxLoading(true)
+    const res = await fetch(`/api/transactions?categoryId=${cat.id}`)
+    if (res.ok) setCategoryTransactions(await res.json())
+    setTxLoading(false)
+  }
 
   function openAdd() {
     setEditingCategory(null)
@@ -156,6 +178,7 @@ export default function CategoriesPage() {
           <Tabs.Content value="expense">
             <CategoryList
               categories={expenseCategories}
+              onView={openCategory}
               onEdit={openEdit}
               onDelete={handleDelete}
             />
@@ -164,12 +187,52 @@ export default function CategoriesPage() {
           <Tabs.Content value="income">
             <CategoryList
               categories={incomeCategories}
+              onView={openCategory}
               onEdit={openEdit}
               onDelete={handleDelete}
             />
           </Tabs.Content>
         </Tabs.Root>
       )}
+
+      {/* Category transactions sheet */}
+      <BottomSheet
+        open={!!viewingCategory}
+        onClose={() => setViewingCategory(null)}
+        title={viewingCategory ? `${viewingCategory.icon} ${viewingCategory.name}` : ''}
+      >
+        <div className="px-5 pb-6">
+          {txLoading ? (
+            <div className="flex justify-center py-10">
+              <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : categoryTransactions.length === 0 ? (
+            <div className="text-center py-10">
+              <p className="text-slate-400 text-sm">No transactions in this category yet</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {categoryTransactions.map((t) => (
+                <div key={t.id} className="flex items-center gap-3 bg-slate-700 rounded-xl px-4 py-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-slate-400 text-xs">{format(new Date(t.date), 'MMM d, yyyy')}</p>
+                    {t.note && <p className="text-slate-300 text-sm truncate">{t.note}</p>}
+                  </div>
+                  <span className={`text-sm font-bold flex-shrink-0 ${t.type === 'income' ? 'text-green-400' : 'text-red-400'}`}>
+                    {t.type === 'income' ? '+' : '-'}{formatCurrency(t.amount)}
+                  </span>
+                </div>
+              ))}
+              <div className="mt-3 pt-3 border-t border-slate-700 flex justify-between items-center">
+                <span className="text-slate-400 text-sm">{categoryTransactions.length} transaction{categoryTransactions.length !== 1 ? 's' : ''}</span>
+                <span className={`font-bold ${viewingCategory?.type === 'income' ? 'text-green-400' : 'text-red-400'}`}>
+                  {formatCurrency(categoryTransactions.reduce((sum, t) => sum + t.amount, 0))}
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+      </BottomSheet>
 
       {/* Add/Edit sheet */}
       <BottomSheet
@@ -295,10 +358,12 @@ export default function CategoriesPage() {
 
 function CategoryList({
   categories,
+  onView,
   onEdit,
   onDelete,
 }: {
   categories: Category[]
+  onView: (cat: Category) => void
   onEdit: (cat: Category) => void
   onDelete: (id: string) => void
 }) {
@@ -318,17 +383,22 @@ function CategoryList({
           key={cat.id}
           className="flex items-center gap-3 bg-slate-800 rounded-2xl px-4 py-3.5 border border-slate-700"
         >
-          <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
-            style={{ backgroundColor: cat.color + '30' }}
+          <button
+            onClick={() => onView(cat)}
+            className="flex items-center gap-3 flex-1 min-w-0 text-left"
           >
-            {cat.icon}
-          </div>
-          <div
-            className="w-3 h-3 rounded-full flex-shrink-0"
-            style={{ backgroundColor: cat.color }}
-          />
-          <span className="flex-1 text-white font-medium">{cat.name}</span>
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
+              style={{ backgroundColor: cat.color + '30' }}
+            >
+              {cat.icon}
+            </div>
+            <div
+              className="w-3 h-3 rounded-full flex-shrink-0"
+              style={{ backgroundColor: cat.color }}
+            />
+            <span className="flex-1 text-white font-medium truncate">{cat.name}</span>
+          </button>
           <div className="flex items-center gap-1">
             <button
               onClick={() => onEdit(cat)}
