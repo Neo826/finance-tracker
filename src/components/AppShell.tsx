@@ -3,12 +3,13 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { SessionProvider } from 'next-auth/react'
-import { Home, Calendar, RefreshCw, Tag } from 'lucide-react'
+import { Home, Calendar, RefreshCw, Tag, PiggyBank } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const navItems = [
   { href: '/', label: 'Dashboard', icon: Home },
   { href: '/calendar', label: 'Calendar', icon: Calendar },
+  { href: '/budgets', label: 'Budgets', icon: PiggyBank },
   { href: '/recurring', label: 'Recurring', icon: RefreshCw },
   { href: '/categories', label: 'Categories', icon: Tag },
 ]
@@ -34,7 +35,7 @@ function BottomNav() {
                 active ? 'text-indigo-400' : 'text-slate-500 hover:text-slate-300'
               )}
             >
-              <Icon size={22} strokeWidth={active ? 2.5 : 1.5} />
+              <Icon size={20} strokeWidth={active ? 2.5 : 1.5} />
               <span className="text-[10px] font-medium">{label}</span>
             </Link>
           )

@@ -15,7 +15,7 @@ export async function PUT(
 
   try {
     const body = await req.json()
-    const { name, color, icon, type } = body
+    const { name, color, icon, type, monthlyBudget } = body
 
     const existing = await prisma.category.findFirst({
       where: { id, userId: session.user.id },
@@ -26,7 +26,13 @@ export async function PUT(
 
     const category = await prisma.category.update({
       where: { id },
-      data: { name, color, icon, type },
+      data: {
+        name,
+        color,
+        icon,
+        type,
+        monthlyBudget: monthlyBudget != null ? parseFloat(monthlyBudget) : null,
+      },
     })
 
     return Response.json(category)
